@@ -1,0 +1,115 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<meta name="theme-color" content="#17152b">
+<title>荒野亂鬥角色輪盤</title>
+<style>
+:root{color-scheme:dark;--bg:#111022;--panel:#201d3b;--accent:#ffd447;--text:#fff}
+*{box-sizing:border-box}
+body{margin:0;background:radial-gradient(circle at top,#30245b,#111022 60%);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,"Noto Sans TC",sans-serif;min-height:100vh}
+main{width:min(100%,900px);margin:auto;padding:18px 14px 34px;text-align:center}
+h1{font-size:clamp(24px,5vw,38px);margin:10px 0 5px;text-shadow:0 3px #7a3bba}
+.sub{color:#d4cfee;margin:0 0 18px;font-size:14px}
+.stage{position:relative;width:min(88vw,540px);aspect-ratio:1;margin:0 auto 18px;filter:drop-shadow(0 10px 22px #0008)}
+canvas{width:100%;height:100%;display:block}
+.pointer{position:absolute;z-index:2;left:50%;top:-3px;transform:translateX(-50%);width:0;height:0;border-left:19px solid transparent;border-right:19px solid transparent;border-top:0;border-bottom:0;border-top:35px solid #fff;filter:drop-shadow(0 3px 2px #0008)}
+.controls{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin:8px 0 16px}
+button{border:0;border-radius:14px;padding:13px 22px;font-size:17px;font-weight:800;cursor:pointer;color:#24173d;background:linear-gradient(#ffe778,#ffbd27);box-shadow:0 5px 0 #b87813;touch-action:manipulation}
+button:disabled{opacity:.6;cursor:wait}
+button.secondary{background:#413765;color:white;box-shadow:0 5px 0 #28203f;font-size:14px}
+.result{background:linear-gradient(135deg,#33265b,#201b3b);border:2px solid #8064ce;border-radius:18px;padding:15px 12px;margin:0 auto 18px;max-width:540px;min-height:86px}
+.result-label{font-size:13px;color:#c9b9ff}
+#resultName{font-size:clamp(25px,6vw,38px);font-weight:900;color:#ffe46b;margin-top:3px;overflow-wrap:anywhere}
+.tools{max-width:540px;margin:0 auto 18px;display:flex;gap:8px}
+input{flex:1;min-width:0;border:1px solid #5d5088;background:#17142c;color:white;border-radius:12px;padding:11px 12px;font-size:16px}
+.count{color:#c9c1e8;font-size:13px;margin:10px}
+details{text-align:left;max-width:540px;margin:0 auto;background:#1b1832;border-radius:14px;padding:12px 14px}
+summary{font-weight:800;cursor:pointer}
+#namesList{display:flex;flex-wrap:wrap;gap:6px;margin-top:12px}
+.chip{background:#332b55;border:1px solid #514477;border-radius:9px;padding:6px 9px;font-size:13px}
+.note{font-size:12px;color:#aaa2cb;margin-top:16px}
+</style>
+</head>
+<body>
+<main>
+<h1>⭐ 荒野亂鬥角色輪盤 ⭐</h1>
+<p class="sub">收錄你提供的全部角色・繁體中文・點一下就開轉！</p>
+<div class="stage"><div class="pointer"></div><canvas id="wheel" aria-label="可旋轉的角色輪盤"></canvas></div>
+<div class="controls">
+<button id="spinBtn">🎯 開始轉盤！</button>
+<button class="secondary" id="resetBtn">重新抽一次</button>
+</div>
+<section class="result" aria-live="polite">
+<div class="result-label">這次抽到的角色是</div>
+<div id="resultName">準備好了嗎？</div>
+</section>
+<div class="tools">
+<input id="search" type="search" placeholder="搜尋角色名稱…" aria-label="搜尋角色">
+<button class="secondary" id="copyBtn">複製名單</button>
+</div>
+<div class="count" id="count"></div>
+<details><summary>查看全部角色名單</summary><div id="namesList"></div></details>
+<p class="note">小提示：輪盤會隨機旋轉並停在一位角色上。此網頁可在手機、平板及電腦瀏覽器開啟。</p>
+</main>
+<script>
+const names = ["雪莉", "柯爾特", "狂牛", "布洛克", "保力", "妮塔", "艾爾普里莫", "波可", "羅莎", "彈射", "潔西", "爆破麥克", "達里爾", "佩妮", "滴答", "卡爾", "比特8號", "賈姬", "格斯", "鷹獵人 爆", "小辣椒", "帕姆", "法蘭克", "嗶嗶", "碧兒", "艾謎", "格爾", "納妮", "葛蕾特", "艾德加", "駛徒", "蓓爾", "葛羅姆", "格里夫", "阿信", "蘿拉", "邦妮", "山姆", "曼蒂", "麥希", "漢克", "珀爾", "賴瑞和羅瑞", "安傑洛", "貝瑞", "謝德", "謎寶", "特朗克", "博爾特", "莫提斯", "塔拉", "吉恩", "Mr. P", "麥克絲", "芽芽", "阿魯", "拜倫", "拉夫", "斯威克", "霸子", "范", "異芙", "珍娜", "歐提斯", "巴斯特", "蓋瑞", "R-T", "葳洛", "道格", "查克", "查莉", "米可", "美樂蒂", "莉莉", "克蘭西", "莫", "茱茱", "奧利", "露米", "芬克斯", "載勇", "愛莉", "蜜娜", "茲奇", "琪琪", "格魯伊", "娜吉亞", "達米安", "絲塔諾娃", "溫蒂", "科斯莫", "文斯", "史派克", "鴉", "里昂", "沙迪", "奔騰", "安珀", "梅格", "查斯特", "康迪留斯", "凱特", "德拉古", "賢治", "皮爾斯", "憲", "小風", "西里烏斯"];
+const canvas=document.getElementById('wheel'),ctx=canvas.getContext('2d');
+const spinBtn=document.getElementById('spinBtn'),resultName=document.getElementById('resultName');
+const colors=['#f94144','#f3722c','#f9c74f','#90be6d','#43aa8b','#4d96ff','#7b61ff','#d65db1','#ff6f91','#00b4d8'];
+let rotation=0,spinning=false;
+function resize(){
+ const dpr=Math.max(1,window.devicePixelRatio||1),size=Math.min(900,Math.floor(canvas.parentElement.clientWidth*dpr));
+ canvas.width=size;canvas.height=size;draw();
+}
+function draw(){
+ const s=canvas.width;if(!s)return;const cx=s/2,cy=s/2,r=s*.475,step=Math.PI*2/names.length;
+ ctx.clearRect(0,0,s,s);
+ for(let i=0;i<names.length;i++){
+   const start=rotation+i*step-Math.PI/2,end=start+step;
+   ctx.beginPath();ctx.moveTo(cx,cy);ctx.arc(cx,cy,r,start,end);ctx.closePath();
+   ctx.fillStyle=colors[i%colors.length];ctx.fill();
+   ctx.strokeStyle='#fff9';ctx.lineWidth=Math.max(1,s*.0015);ctx.stroke();
+   ctx.save();ctx.translate(cx,cy);ctx.rotate(start+step/2);
+   ctx.textAlign='right';ctx.textBaseline='middle';ctx.fillStyle='#fff';
+   const fs=Math.max(8,Math.min(15,s*.023));ctx.font=`bold ${fs}px -apple-system,BlinkMacSystemFont,"Noto Sans TC",sans-serif`;
+   ctx.shadowColor='#0008';ctx.shadowBlur=2;
+   let label=names[i];if(label.length>7)label=label.slice(0,7);
+   ctx.fillText(label,r-9,0);
+   ctx.restore();
+ }
+ ctx.beginPath();ctx.arc(cx,cy,s*.055,0,Math.PI*2);ctx.fillStyle='#fff';ctx.fill();ctx.strokeStyle='#3c2767';ctx.lineWidth=s*.012;ctx.stroke();
+ ctx.beginPath();ctx.arc(cx,cy,s*.025,0,Math.PI*2);ctx.fillStyle='#ffd447';ctx.fill();
+}
+function selectedIndex(){const step=Math.PI*2/names.length;let a=((-rotation)%(Math.PI*2)+(Math.PI*2))%(Math.PI*2);return Math.floor(a/step)%names.length;}
+function spin(){
+ if(spinning)return;spinning=true;spinBtn.disabled=true;resultName.textContent='轉動中…';
+ const start=rotation,extra=(Math.PI*2)*(5+Math.random()*5)+Math.random()*Math.PI*2;
+ const duration=4200+Math.random()*900,t0=performance.now();
+ function frame(now){
+   let p=Math.min(1,(now-t0)/duration);let ease=1-Math.pow(1-p,4);
+   rotation=start+extra*ease;draw();
+   if(p<1)requestAnimationFrame(frame);else{
+     spinning=false;spinBtn.disabled=false;const i=selectedIndex();
+     resultName.textContent=names[i];if(navigator.vibrate)navigator.vibrate(80);
+   }
+ }
+ requestAnimationFrame(frame);
+}
+function renderList(filter=''){
+ const list=document.getElementById('namesList');list.innerHTML='';
+ const shown=names.filter(n=>n.toLocaleLowerCase().includes(filter.toLocaleLowerCase()));
+ shown.forEach(n=>{const el=document.createElement('span');el.className='chip';el.textContent=n;list.appendChild(el)});
+ document.getElementById('count').textContent=`共 ${names.length} 位角色${filter?'・符合搜尋 '+shown.length+' 位':''}`;
+}
+spinBtn.addEventListener('click',spin);
+document.getElementById('resetBtn').addEventListener('click',()=>{if(!spinning){rotation=Math.random()*Math.PI*2;draw();resultName.textContent='準備好了嗎？'}});
+document.getElementById('search').addEventListener('input',e=>renderList(e.target.value));
+document.getElementById('copyBtn').addEventListener('click',async()=>{
+ try{await navigator.clipboard.writeText(names.join('\n'));document.getElementById('copyBtn').textContent='已複製！';setTimeout(()=>document.getElementById('copyBtn').textContent='複製名單',1500)}
+ catch(e){const ta=document.createElement('textarea');ta.value=names.join('\n');document.body.appendChild(ta);ta.select();document.execCommand('copy');ta.remove();document.getElementById('copyBtn').textContent='已複製！'}
+});
+window.addEventListener('resize',resize);renderList();resize();
+</script>
+</body></html>
